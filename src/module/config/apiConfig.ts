@@ -1,38 +1,49 @@
 import {parseJwt} from "../lib/utils";
 import AuthConfig from "./AuthConfig";
+import axios from "axios";
 
 class ApiConfig {
     private readonly _baseUrl: string;
     private readonly _apiKey: any;
     private readonly _apiHost: string;
-    private readonly _header: any;
+    private readonly _headers: any;
+    private readonly _axios: axios;
 
     constructor(params) {
         const {baseUrl, apiKey, apiHost} = params;
         this._baseUrl = baseUrl;
         this._apiKey = apiKey;
-        this._apiHost = apiHost + "/api";
-        this._header = {
+        this._apiHost = apiHost;
+        this._headers = {
             'Content-Type': 'application/json',
-            'Authorization': null
+            'Authorization': `Bearer ${AuthConfig.token}`
         }
+        this._axios = axios.create({
+            baseURL: this._apiHost,
+            headers: this._headers,
+            withCredentials: true
+        })
     }
 
-    get apiHost() {
+    public get apiHost() {
         return this._apiHost
     }
 
-    get header() {
-        return this._header;
+    public get headers() {
+        return this._headers;
     }
 
-    get getApiKey() {
+    public get getApiKey() {
         return this._apiKey;
+    }
+
+    public get axios() {
+        return this._axios;
     }
 
     authenticate(token: any) {
         // this._authToken = token;
-        this._header ['Authorization: Bearer '] = token;
+        this._headers ['Authorization: Bearer '] = token;
         let parsedToken = parseJwt(token);
         console.log(parsedToken);
         AuthConfig.tokenExpirationTime = parsedToken.exp;

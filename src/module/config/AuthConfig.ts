@@ -51,4 +51,11 @@ export default class AuthConfig {
     public static set token(value: string) {
         this._token = value;
     }
+
+    public static logout(){
+        AuthConfig.token = "";
+        AuthConfig.userId = null;
+        AuthConfig.tokenExpirationTime = 0;
+        AuthConfig.isAuthenticated = false;
+    }
 }
