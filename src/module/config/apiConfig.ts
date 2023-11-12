@@ -1,13 +1,11 @@
-import {parseJwt} from "../lib/utils";
 import AuthConfig from "./AuthConfig";
-import axios from "axios";
 
 class ApiConfig {
     private readonly _baseUrl: string;
     private readonly _apiKey: any;
     private readonly _apiHost: string;
     private readonly _headers: any;
-    private readonly _axios: axios;
+
 
     constructor(params) {
         const {baseUrl, apiKey, apiHost} = params;
@@ -18,11 +16,7 @@ class ApiConfig {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${AuthConfig.token}`
         }
-        this._axios = axios.create({
-            baseURL: this._apiHost,
-            headers: this._headers,
-            withCredentials: true
-        })
+
     }
 
     public get apiHost() {
@@ -33,22 +27,12 @@ class ApiConfig {
         return this._headers;
     }
 
-    public get getApiKey() {
+    public get apiKey() {
         return this._apiKey;
     }
 
-    public get axios() {
-        return this._axios;
-    }
-
-    authenticate(token: any) {
-        // this._authToken = token;
-        this._headers ['Authorization: Bearer '] = token;
-        let parsedToken = parseJwt(token);
-        console.log(parsedToken);
-        AuthConfig.tokenExpirationTime = parsedToken.exp;
-        AuthConfig.isAuthenticated = true;
-        AuthConfig.userId = parsedToken.userId;
+    get baseUrl(): string {
+        return this._baseUrl;
     }
 
     static verifyParamsTypesForInstantiation(params): boolean {

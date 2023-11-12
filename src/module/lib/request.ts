@@ -1,96 +1,35 @@
-import getApiConfig from "../config/apiConfig";
-import AuthConfig from "../config/AuthConfig";
+import HttpClients from "../config/httpClients";
+import dotenv from "dotenv";
 import Verbs from "./verbs";
-import dotenv from 'dotenv';
-import Auth from "./auth";
 
-dotenv.config({path: "../.env.apiConfig"});
+import apiConfig from "../config/apiConfig";
+import axios from "axios";
 
-//TODO add parameters from .env.apiConfig
-const apiConfig = getApiConfig();
-
-//TODO change baseUrl with the previous declaration. It was done for dev purposes
-// const baseUrl = 'http://' + apiConfig.apiHost;
-const baseUrl: string = apiConfig.apiHost;
+dotenv.config({path: "../.env.this.apiConfig"});
 
 export default class Request {
+    private apiConfig;
+    private readonly _httpClient: axios;
+    private readonly _isSecure: boolean;
+    private readonly _interceptorsHandlers: HttpClients | null;
 
-    public call(url: string, method: Object, data: object = null, id: any = null) {
+    constructor(isSecure: boolean) {
+        this.apiConfig = apiConfig();
+        this._isSecure = isSecure;
+        const httpClients: HttpClients = new HttpClients()
 
-        const requestIntercept = apiConfig.axios.interceptors.request.use(
-            config => {
-                if (!config.headers['Authorization']) {
-                    config.headers['Authorization'] = `Bearer ${AuthConfig.token}`;
-                }
-                return config;
-            }, (error) => Promise.reject(error)
-        )
-
-        const responseIntercept = apiConfig.axios.interceptors.response.use(
-            response => response,
-            async (error) => {
-                const previousRequest = error?.config;
-                if (error?.response?.status === 403 && !previousRequest?.sent) {
-                    await Auth.refreshToken();
-                    await (new Request()).call(url, method, data, id);
-                    return () => apiConfig.axios.interceptors.response.eject(responseIntercept);
-                }
-                return Promise.reject(error);
-            })
-
-        let restMethod;
-        switch (method) {
-            case Verbs.GET: {
-                restMethod = this.get(url);
-                break;
-            }
-            case Verbs.POST: {
-                restMethod = this.post(url, data);
-                break;
-            }
-            case Verbs.PUT: {
-                restMethod = this.put(url, data, id);
-                break;
-            }
-            case Verbs.PATCH: {
-                restMethod = this.patch(url, data, id);
-                break;
-            }
-            case Verbs.DELETE: {
-                restMethod = this.delete(url, id);
-                break;
-            }
-        }
-
-        return () => {
-            apiConfig.axios.interceptors.request.eject(requestIntercept);
-            apiConfig.axios.interceptors.request.eject(responseIntercept);
-            restMethod();
+        if (isSecure) {
+            this._interceptorsHandlers = httpClients;
+            this._httpClient = this._interceptorsHandlers.axiosSecure;
+        } else {
+            this._interceptorsHandlers = null;
+            this._httpClient = httpClients.axios;
         }
     }
 
-    refreshToken() {
-        this.get("/api/refresh")
-            .then((response) => {
-                if (response.status === 200) {
-                    this.authenticate(response.data.token)
-                } else {
-                    this.authenticate(null);
-                    localStorage.removeItem('token');
-                }
-            }).catch((error) => Error(error))
-    }
-
-    authenticate(token: string) {
-        apiConfig.authenticate(token);
-    }
-
-    logout() {
-    }
-
-    private get = async (url: string, params: any = null) => {
+    private get = async (url: string, params: any = null): Promise<any> => {
         try {
-            return await apiConfig.axios.get(baseUrl + url, {
+            return await this._httpClient.get(this.apiConfig.baseUrl + url, {
                 'params': params
             });
         } catch
@@ -99,10 +38,52 @@ export default class Request {
         }
     }
 
-    private post = async (url: string, data: Object) => {
+    public call(url: string, method: Verbs, data: object = null, id: any = null): Promise<any> {
+        if (this._isSecure) {
+            this._interceptorsHandlers.appendSecureRequestInterceptor();
+            this._interceptorsHandlers.appendSecureResponseInterceptor(url, method, data, id);
+        } else this._interceptorsHandlers.appendResponseIntercept(url, method, data, id);
+
+        const returnPromise = async (): Promise<any> => {
+            let restMethod: any;
+            switch (method) {
+                case Verbs.GET: {
+                    restMethod = this.get(url);
+                    break;
+                }
+                case Verbs.POST: {
+                    restMethod = this.post(url, data);
+                    break;
+                }
+                case Verbs.PUT: {
+                    restMethod = this.put(url, data, id);
+                    break;
+                }
+                case Verbs.PATCH: {
+                    restMethod = this.patch(url, data, id);
+                    break;
+                }
+                case Verbs.DELETE: {
+                    restMethod = this.delete(url, id);
+                    break;
+                }
+            }
+
+            if (this._isSecure) {
+                this._interceptorsHandlers.removeSecureRequestIntercept();
+                this._interceptorsHandlers.removeSecureResponseIntercept();
+            } else this._interceptorsHandlers.removeResponseIntercept();
+
+            return restMethod;
+        }
+
+        return returnPromise();
+    }
+
+    private post = async (url: string, data: Object): Promise<any> => {
         try {
-            return await apiConfig.axios.post(
-                baseUrl + url,
+            return await this._httpClient.post(
+                this.apiConfig.baseUrl + url,
                 data
             );
         } catch
@@ -111,13 +92,13 @@ export default class Request {
         }
     }
 
-    private put = async (url: string, data: Object, id: any) => {
+    private put = async (url: string, data: Object, id: any): Promise<any> => {
         Object.defineProperty(data, 'id', {
             'value': id
         })
         try {
-            return await apiConfig.axios.put(
-                baseUrl + url,
+            return await this._httpClient.put(
+                this.apiConfig.baseUrl + url,
                 data
             );
         } catch
@@ -126,13 +107,13 @@ export default class Request {
         }
     }
 
-    private patch = async (url: string, data: Object, id: any) => {
+    private patch = async (url: string, data: Object, id: any): Promise<any> => {
         Object.defineProperty(data, 'id', {
             'value': id
         })
         try {
-            return await apiConfig.axios.patch(
-                baseUrl + url + '/' + id,
+            return await this._httpClient.patch(
+                this.apiConfig.baseUrl + url + '/' + id,
                 data
             );
         } catch
@@ -141,14 +122,26 @@ export default class Request {
         }
     }
 
-    private delete = async (url: string, id: any) => {
+    private delete = async (url: string, id: any): Promise<any> => {
         try {
-            return await apiConfig.axios.delete(
-                baseUrl + url + '/' + id
+            return await this._httpClient.delete(
+                this.apiConfig.baseUrl + url + '/' + id
             );
         } catch
             (err) {
             console.log(err);
         }
+    }
+
+    get httpClient(): axios {
+        return this._httpClient;
+    }
+
+    get isSecure(): boolean {
+        return this._isSecure;
+    }
+
+    get interceptorsHandlers(): HttpClients | null {
+        return this._interceptorsHandlers;
     }
 }

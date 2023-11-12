@@ -6,10 +6,13 @@ import Verbs from "./verbs";
  */
 export default abstract class EndpointsAbstract {
     protected endpointURL: string;
-    private request: Request = new Request();
-    //TODO remove this from here
-    setToken(token: string) {
-        this.request.authenticate(token);
+    private request: Request;
+
+    /**
+     * @param isSecure {boolean} sets JWT Token usage over the requests from the extended class
+     */
+    constructor(isSecure: boolean) {
+        this.request = new Request(isSecure)
     }
 
     getRequest() {

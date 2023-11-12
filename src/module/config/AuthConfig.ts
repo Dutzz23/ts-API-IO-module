@@ -7,6 +7,7 @@
  *      <li>isAuthenticated: boolean (DEFAULT: false)
  *      <li>tokenExpirationTime: any (DEFAULT: null)
  *      <li>userId: any (DEFAULT: null)
+ *      <li>token: string|null (DEFAULT: null)
  * </ul>
  */
 export default class AuthConfig {
@@ -17,7 +18,7 @@ export default class AuthConfig {
     /**@private*/
     private static _userId: any = null;
     /**@private*/
-    private static _token: string = "";
+    private static _token: string | null = null;
 
     public static get isAuthenticated(): boolean {
         return this._isAuthenticated;
@@ -50,12 +51,5 @@ export default class AuthConfig {
 
     public static set token(value: string) {
         this._token = value;
-    }
-
-    public static logout(){
-        AuthConfig.token = "";
-        AuthConfig.userId = null;
-        AuthConfig.tokenExpirationTime = 0;
-        AuthConfig.isAuthenticated = false;
     }
 }
