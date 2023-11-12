@@ -9,6 +9,7 @@ class Auth extends EndpointsAbstract {
 
 
     public static refreshToken = () => axios.get('/refresh', {
+        //TODO handle refresh using token expiration time
         withCredentials: true
     })
         .then((response: AxiosResponse<any>) => {

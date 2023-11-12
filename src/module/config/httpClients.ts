@@ -1,7 +1,7 @@
 import AuthConfig from "./AuthConfig";
 import Request from "../lib/request";
 import Auth from "../lib/auth";
-
+import apiConfig from "./apiConfig";
 import axios from "axios";
 
 export default class HttpClients {
@@ -12,15 +12,15 @@ export default class HttpClients {
     private _secureResponseIntercept;
 
     constructor() {
-        const apiConfig = apiConfig();
+        const apiConfiguration = apiConfig();
         this._axiosSecure = axios.create({
-            baseURL: apiConfig.apiHost,
-            headers: apiConfig.headers,
+            baseURL: apiConfiguration.apiHost,
+            headers: apiConfiguration.headers,
             withCredentials: true
         })
 
         this._axios = axios.create({
-            baseURL: apiConfig.apiHost,
+            baseURL: apiConfiguration.apiHost,
             headers: {'Content-Type': 'application/json',},
             withCredentials: false
         })
@@ -37,7 +37,7 @@ export default class HttpClients {
     /**
      * Handle request before it is actually done
      */
-    public appendSecureRequestInterceptor() {
+    public appendSecureRequestInterceptor(): void {
         this._secureRequestIntercept = this.axiosSecure.interceptors.request.use(
             config => {
                 if (!config.headers['Authorization']) {
@@ -51,7 +51,7 @@ export default class HttpClients {
     /**
      * Handle server response to retry the call after 403 code error with a new JWT token
      */
-    appendSecureResponseInterceptor(url, method, data, id) {
+    appendSecureResponseInterceptor(url, method, data, id): void {
 
         this._secureResponseIntercept = this._axiosSecure.interceptors.response.use(
             response => response,
@@ -79,16 +79,16 @@ export default class HttpClients {
             })
     }
 
-    removeResponseIntercept() {
+    ejectResponseIntercept(): void {
         this.axios.interceptors.response.eject(this._responseIntercept);
 
     }
 
-    removeSecureRequestIntercept() {
+    ejectSecureRequestIntercept(): void {
         this.axiosSecure.interceptors.request.eject(this._secureRequestIntercept);
     }
 
-    removeSecureResponseIntercept() {
+    ejectSecureResponseIntercept(): void {
         this.axiosSecure.interceptors.response.eject(this._secureResponseIntercept);
 
     }

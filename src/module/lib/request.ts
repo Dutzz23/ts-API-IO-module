@@ -27,16 +27,6 @@ export default class Request {
         }
     }
 
-    private get = async (url: string, params: any = null): Promise<any> => {
-        try {
-            return await this._httpClient.get(this.apiConfig.baseUrl + url, {
-                'params': params
-            });
-        } catch
-            (err) {
-            console.log(err);
-        }
-    }
 
     public call(url: string, method: Verbs, data: object = null, id: any = null): Promise<any> {
         if (this._isSecure) {
@@ -70,9 +60,9 @@ export default class Request {
             }
 
             if (this._isSecure) {
-                this._interceptorsHandlers.removeSecureRequestIntercept();
-                this._interceptorsHandlers.removeSecureResponseIntercept();
-            } else this._interceptorsHandlers.removeResponseIntercept();
+                this._interceptorsHandlers.ejectSecureRequestIntercept();
+                this._interceptorsHandlers.ejectSecureResponseIntercept();
+            } else this._interceptorsHandlers.ejectResponseIntercept();
 
             return restMethod;
         }
@@ -80,7 +70,18 @@ export default class Request {
         return returnPromise();
     }
 
-    private post = async (url: string, data: Object): Promise<any> => {
+    private async get(url: string, params: any = null): Promise<any> {
+        try {
+            return await this._httpClient.get(this.apiConfig.baseUrl + url, {
+                'params': params
+            });
+        } catch
+            (err) {
+            console.log(err);
+        }
+    }
+
+    private async post(url: string, data: Object): Promise<any> {
         try {
             return await this._httpClient.post(
                 this.apiConfig.baseUrl + url,
@@ -92,7 +93,7 @@ export default class Request {
         }
     }
 
-    private put = async (url: string, data: Object, id: any): Promise<any> => {
+    private async put(url: string, data: Object, id: any): Promise<any> {
         Object.defineProperty(data, 'id', {
             'value': id
         })
@@ -107,7 +108,7 @@ export default class Request {
         }
     }
 
-    private patch = async (url: string, data: Object, id: any): Promise<any> => {
+    private async patch(url: string, data: Object, id: any): Promise<any> {
         Object.defineProperty(data, 'id', {
             'value': id
         })
@@ -122,7 +123,7 @@ export default class Request {
         }
     }
 
-    private delete = async (url: string, id: any): Promise<any> => {
+    private async delete(url: string, id: any): Promise<any> {
         try {
             return await this._httpClient.delete(
                 this.apiConfig.baseUrl + url + '/' + id
@@ -135,13 +136,5 @@ export default class Request {
 
     get httpClient(): axios {
         return this._httpClient;
-    }
-
-    get isSecure(): boolean {
-        return this._isSecure;
-    }
-
-    get interceptorsHandlers(): HttpClients | null {
-        return this._interceptorsHandlers;
     }
 }
